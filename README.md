@@ -4,9 +4,9 @@
 
 This project demonstrates communication between two Docker containers using:
 
-* TCP Communication
-* ICMP (Ping) Communication
-* SSH Communication
+- TCP Communication
+- ICMP (Ping) Communication
+- SSH Communication
 
 Both containers are connected using the same custom Docker network.
 
@@ -15,33 +15,31 @@ Both containers are connected using the same custom Docker network.
 # Architecture
 
 ```text
-+-------------------+
-|   Container c1    |
-|-------------------|
-| TCP Server        |
-| Ping              |
-| SSH Client        |
-+-------------------+
-          |
-          |
-     Docker Network
-        (mynet)
-          |
-          |
-+-------------------+
-|   Container c2    |
-|-------------------|
-| TCP Client        |
-| Ping              |
-| SSH Server        |
-+-------------------+
++----------------------+
+|   Container server   |
+|----------------------|
+| TCP Server           |
+| Ping                 |
+| SSH Server           |
++----------------------+
+           |
+           |
+      Docker Network
+         (mynet)
+           |
+           |
++----------------------+
+|   Container client   |
+|----------------------|
+| TCP Client           |
+| Ping                 |
+| SSH Client           |
++----------------------+
 ```
 
 ---
 
 # Server Details
-
-Server IP:
 
 ```text
 Your-Server-IP
@@ -89,6 +87,8 @@ docker --version
 
 # Step 3: Create Docker Network
 
+## Terminal 1: Create Docker Network
+
 ```bash
 docker network create mynet
 ```
@@ -103,12 +103,21 @@ docker network ls
 
 # Step 4: Create Containers
 
+## Terminal 1: Create server Container
+
 ```bash
-docker run -dit --name c1 --network mynet ubuntu bash
-docker run -dit --name c2 --network mynet ubuntu bash
+docker run -dit --name server --network mynet ubuntu bash
 ```
 
-Check containers:
+---
+
+## Terminal 2: Create client Container
+
+```bash
+docker run -dit --name client --network mynet ubuntu bash
+```
+
+Check running containers:
 
 ```bash
 docker ps
@@ -118,32 +127,32 @@ docker ps
 
 # Step 5: Install Required Packages
 
-## Install Packages in c1
+## Terminal 1: Install Packages in server
 
 ```bash
-docker exec c1 apt update
-docker exec c1 apt install -y iputils-ping netcat-openbsd openssh-client
+docker exec server apt update
+docker exec server apt install -y iputils-ping netcat-openbsd openssh-server openssh-client nano
 ```
 
 ---
 
-## Install Packages in c2
+## Terminal 2: Install Packages in client
 
 ```bash
-docker exec c2 apt update
-docker exec c2 apt install -y iputils-ping netcat-openbsd openssh-server openssh-client nano
+docker exec client apt update
+docker exec client apt install -y iputils-ping netcat-openbsd openssh-client
 ```
 
 ---
 
 # Step 6: TCP Communication Test
 
-## Terminal 1
+## Terminal 1: Start TCP Server
 
-Open c1:
+Open server container:
 
 ```bash
-docker exec -it c1 bash
+docker exec -it server bash
 ```
 
 Start TCP server:
@@ -154,44 +163,44 @@ nc -l -p 1234
 
 ---
 
-## Terminal 2
+## Terminal 2: Connect TCP Client
 
-Connect to server again:
+Reconnect to server:
 
 ```bash
 ssh azureuser@Your-Server-IP
 ```
 
-Open c2:
+Open client container:
 
 ```bash
-docker exec -it c2 bash
+docker exec -it client bash
 ```
 
-Connect TCP client to c1:
+Connect client to server:
 
 ```bash
-nc c1 1234
+nc server 1234
 ```
 
 Send message:
 
 ```text
-hello from c2
+hello from client
 ```
 
-Message will appear in c1 terminal.
+Message will appear in server terminal.
 
 TCP communication successful.
 
 ---
 
-# Step 7: Configure SSH in c2
+# Step 7: Configure SSH in server
 
-Open c2:
+## Terminal 1: Open server Container
 
 ```bash
-docker exec -it c2 bash
+docker exec -it server bash
 ```
 
 Set root password:
@@ -206,13 +215,15 @@ Example password:
 123456
 ```
 
----
-
-# Step 8: Enable Root Login and Password Authentication
+Enable SSH root login:
 
 ```bash
 sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+```
 
+Enable password authentication:
+
+```bash
 sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
 ```
 
@@ -228,7 +239,7 @@ Check SSH status:
 service ssh status
 ```
 
-Exit from c2:
+Exit from server container:
 
 ```bash
 exit
@@ -236,21 +247,21 @@ exit
 
 ---
 
-# Step 9: SSH Communication Test
+# Step 8: SSH Communication Test
 
-Open c1:
-
-```bash
-docker exec -it c1 bash
-```
-
-SSH into c2:
+## Terminal 2: Open client Container
 
 ```bash
-ssh root@c2
+docker exec -it client bash
 ```
 
-Type:
+SSH into server:
+
+```bash
+ssh root@server
+```
+
+First time type:
 
 ```text
 yes
@@ -265,25 +276,25 @@ Enter password:
 Successful login output:
 
 ```text
-root@56250ee3d44f:~#
+root@server:~#
 ```
 
 SSH communication successful.
 
 ---
 
-# Step 10: ICMP (Ping) Communication Test
+# Step 9: ICMP (Ping) Communication Test
 
-Inside c2:
+## Terminal 2: Ping server from client
 
 ```bash
-ping c1
+ping server
 ```
 
 Expected output:
 
 ```text
-64 bytes from c1
+64 bytes from server
 ```
 
 Stop ping:
@@ -292,22 +303,38 @@ Stop ping:
 CTRL + C
 ```
 
-Exit from c2:
+Exit SSH session:
 
 ```bash
 exit
 ```
 
-Inside c1:
+Exit client container if needed:
 
 ```bash
-ping c2
+exit
+```
+
+---
+
+## Terminal 1: Ping client from server
+
+Open server container:
+
+```bash
+docker exec -it server bash
+```
+
+Run ping:
+
+```bash
+ping client
 ```
 
 Expected output:
 
 ```text
-64 bytes from c2
+64 bytes from client
 ```
 
 Stop ping:
@@ -322,11 +349,11 @@ ICMP communication successful.
 
 # Final Verification
 
-| Communication Type | Status       |
-| ------------------ | ------------ |
-| TCP Communication  | ✅ Successful |
-| ICMP Communication | ✅ Successful |
-| SSH Communication  | ✅ Successful |
+| Communication Type | Status |
+|--------------------|--------|
+| TCP Communication  | Successful |
+| ICMP Communication | Successful |
+| SSH Communication  | Successful |
 
 ---
 
@@ -334,13 +361,11 @@ ICMP communication successful.
 
 This same concept is used in production environments.
 
-Example:
-
-| Container | Role              |
-| --------- | ----------------- |
-| frontend  | React Application |
-| backend   | Node.js API       |
-| database  | MySQL Database    |
+| Container | Role |
+|------------|------|
+| frontend   | React Application |
+| backend    | Node.js API |
+| database   | MySQL Database |
 
 Communication flow:
 
@@ -364,7 +389,7 @@ exit
 Remove containers:
 
 ```bash
-docker rm -f c1 c2
+docker rm -f server client
 ```
 
 Remove network:
@@ -378,3 +403,16 @@ Verify cleanup:
 ```bash
 docker ps -a
 docker network ls
+```
+
+---
+
+# Outcome
+
+After completing this lab:
+
+- You understand Docker custom networking
+- You tested TCP communication between containers
+- You verified ICMP (Ping) communication
+- You configured SSH communication between containers
+- You learned container-to-container communication concepts used in real-world environments
