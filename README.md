@@ -44,7 +44,7 @@ Both containers are connected using the same custom Docker network.
 Server IP:
 
 ```text
-20.10.189.4
+Your-Server-IP
 ```
 
 ---
@@ -52,7 +52,7 @@ Server IP:
 # Step 1: Connect to Server
 
 ```bash
-ssh azureuser@20.10.189.4
+ssh azureuser@Your-Server-IP
 ```
 
 ---
@@ -76,7 +76,7 @@ exit
 Reconnect:
 
 ```bash
-ssh azureuser@20.10.189.4
+ssh azureuser@Your-Server-IP
 ```
 
 Verify Docker:
@@ -159,7 +159,7 @@ nc -l -p 1234
 Connect to server again:
 
 ```bash
-ssh azureuser@20.10.189.4
+ssh azureuser@Your-Server-IP
 ```
 
 Open c2:
